@@ -1,0 +1,127 @@
+/* =========================================================
+   QuadraJá — estilos (preto, laranja e branco)
+   Complementa o Tailwind CDN.
+   ========================================================= */
+   :root { --ink: #000; --fire: #FF5C00; --ember: #BF3F00; --chalk: #F2F2F2; --ash: #595959; }
+
+   html { scroll-behavior: smooth; }
+   body { font-family: 'Barlow', system-ui, sans-serif; font-size: 17px; line-height: 1.45; color: #000; background: #fff; }
+   
+   /* Tipografia de placar: sempre usada com a classe .display */
+   .display { font-family: 'Big Shoulders Display', Impact, sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: .01em; }
+   
+   /* Foco visível */
+   :focus-visible { outline: 3px solid var(--fire); outline-offset: 2px; }
+   .on-ink :focus-visible, .on-ink:focus-visible { outline-color: #fff; }
+   header :focus-visible, footer :focus-visible { outline-color: #fff; }
+   
+   /* ---------- Botões ---------- */
+   .btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; padding: 0 1.5rem; border: 2px solid #000; font-family: 'Big Shoulders Display', Impact, sans-serif; font-weight: 800; font-size: 1.2rem; text-transform: uppercase; letter-spacing: .02em; transition: background .12s, color .12s, border-color .12s; cursor: pointer; }
+   .btn:disabled { opacity: .4; cursor: not-allowed; }
+   .btn-fire { background: var(--fire); color: #000; }
+   .btn-fire:hover:not(:disabled) { background: #000; color: #fff; }
+   .btn-ink { background: #000; color: #fff; }
+   .btn-ink:hover:not(:disabled) { background: var(--fire); color: #000; }
+   .btn-line { background: #fff; color: #000; }
+   .btn-line:hover:not(:disabled) { background: #000; color: #fff; }
+   .btn-ghost { background: transparent; color: #fff; border-color: #fff; }
+   .btn-ghost:hover { background: #fff; color: #000; }
+   .btn-sm { min-height: 40px; padding: 0 1rem; font-size: 1.05rem; }
+   
+   /* Hover do card: sobe e ganha sombra dura */
+   .lift { transition: transform .14s ease, box-shadow .14s ease; }
+   .lift:hover { transform: translate(-4px, -4px); box-shadow: 6px 6px 0 #000; }
+   
+   /* ---------- Carrossel de imagens ---------- */
+   .carousel { position: relative; overflow: hidden; width: 100%; height: 100%; background: var(--chalk); }
+   .carousel-track { display: flex; height: 100%; transition: transform .25s ease; }
+   .carousel-track img { flex: 0 0 100%; width: 100%; height: 100%; object-fit: cover; }
+   .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); z-index: 20; display: grid; place-items: center; width: 34px; height: 34px; background: #000; color: #fff; opacity: 0; transition: opacity .15s ease; }
+   .carousel-btn:hover { background: var(--fire); color: #000; }
+   .carousel:hover .carousel-btn, .carousel:focus-within .carousel-btn { opacity: 1; }
+   @media (hover: none) { .carousel-btn { opacity: 1; } }
+   .carousel-dots { position: absolute; left: 10px; top: 10px; z-index: 20; display: flex; gap: 4px; }
+   .carousel-dots i { width: 14px; height: 4px; background: rgba(255,255,255,.55); }
+   .carousel-dots i.on { background: #fff; }
+   
+   /* Favorito */
+   .fav-btn { display: grid; place-items: center; width: 40px; height: 40px; background: #fff; border: 2px solid #000; color: #000; transition: background .12s; }
+   .fav-btn:hover { background: var(--chalk); }
+   .fav-btn[aria-pressed="true"] { background: var(--fire); }
+   .fav-btn[aria-pressed="true"] svg { fill: #000; }
+   
+   /* ---------- Skeleton ---------- */
+   .skeleton { background: #E4E4E4; animation: pulse 1.1s ease-in-out infinite; }
+   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+   
+   /* ---------- Slider duplo de preço ---------- */
+   .dual { position: relative; height: 28px; }
+   .dual .track { position: absolute; top: 12px; left: 0; right: 0; height: 4px; background: #D6D6D6; }
+   .dual .fill { position: absolute; top: 12px; height: 4px; background: #000; }
+   .dual input[type=range] { position: absolute; left: 0; top: 0; width: 100%; height: 28px; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+   .dual input[type=range]::-webkit-slider-runnable-track { background: transparent; }
+   .dual input[type=range]::-moz-range-track { background: transparent; }
+   .dual input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 20px; height: 24px; background: var(--fire); border: 2px solid #000; cursor: grab; }
+   .dual input[type=range]::-moz-range-thumb { pointer-events: auto; width: 16px; height: 20px; border-radius: 0; background: var(--fire); border: 2px solid #000; cursor: grab; }
+   
+   /* ---------- Barra de busca ----------
+      Campos brancos separados por filetes pretos (gap de 2px sobre fundo preto). */
+   .sb { display: flex; flex-direction: column; gap: 2px; background: #000; border: 4px solid #000; }
+   .sb--hero { border-color: var(--fire); }
+   .sb-field { display: flex; align-items: center; gap: .75rem; background: #fff; color: #000; padding: .65rem 1rem; min-width: 0; }
+   .sb-field:focus-within { outline: 3px solid var(--fire); outline-offset: -3px; }
+   .sb-body { min-width: 0; flex: 1; }
+   .sb-label { display: block; font-size: .78rem; line-height: 1.1; color: var(--ash); margin-bottom: 2px; }
+   .sb-input { width: 100%; border: 0; background: transparent; font: inherit; font-size: 1rem; font-weight: 600; color: #000; padding: 0; outline: none; text-overflow: ellipsis; }
+   .sb-btn { background: var(--fire); color: #000; font-family: 'Big Shoulders Display', Impact, sans-serif; font-weight: 900; font-size: 1.6rem; text-transform: uppercase; letter-spacing: .03em; padding: 0 2.2rem; min-height: 60px; transition: background .12s, color .12s; }
+   .sb-btn:hover { background: #000; color: #fff; }
+   .sb-step { display: grid; place-items: center; width: 28px; height: 28px; border: 2px solid #000; font-weight: 800; line-height: 1; }
+   .sb-step:hover { background: var(--fire); }
+   @media (min-width: 768px) { .sb { display: grid; grid-template-columns: 1fr 1fr; } .sb-btn { grid-column: 1 / -1; } }
+   @media (min-width: 1024px) {
+     .sb { display: flex; flex-direction: row; }
+     .sb-field { flex: 1 1 0; }
+     .sb-field.sb-wide { flex: 1.4 1 0; }
+   }
+   .sb--compact .sb-field { padding: .4rem .8rem; }
+   .sb--compact .sb-btn { min-height: 46px; font-size: 1.3rem; padding: 0 1.6rem; }
+   .sb--compact { border-width: 3px; }
+   
+   /* ---------- Filtros: drawer no mobile ---------- */
+   @media (max-width: 1023px) {
+     #filters { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; max-height: 88vh; overflow-y: auto; transform: translateY(105%); transition: transform .25s ease; border-top: 4px solid var(--fire); background: #fff; }
+     #filters.open { transform: none; }
+   }
+   
+   /* Chips */
+   .chip { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; white-space: nowrap; min-height: 40px; border: 2px solid #000; background: #fff; color: #000; padding: 0 .9rem; font-size: .95rem; font-weight: 600; transition: background .12s; }
+   .chip:hover { background: var(--chalk); }
+   .chip[aria-pressed="true"], .chip.is-active { background: var(--fire); }
+   
+   /* Horários da reserva */
+   .slot { min-height: 44px; font-family: 'Big Shoulders Display', Impact, sans-serif; font-weight: 800; font-size: 1.15rem; text-align: center; border: 2px solid #000; background: #fff; transition: background .12s; }
+   .slot-free:hover { background: var(--fire); }
+   .slot-busy { background: var(--chalk); color: #8a8a8a; border-color: #cfcfcf; text-decoration: line-through; cursor: not-allowed; }
+   .slot-sel { background: #000; color: #fff; }
+   
+   /* FAQ */
+   .faq-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .2s ease; }
+   .faq-panel > div { overflow: hidden; }
+   .faq-item.open .faq-panel { grid-template-rows: 1fr; }
+   .faq-item.open .faq-plus { transform: rotate(45deg); }
+   .faq-plus { transition: transform .2s ease; }
+   
+   .no-scrollbar { scrollbar-width: none; }
+   .no-scrollbar::-webkit-scrollbar { display: none; }
+   
+   /* Toast */
+   .toast { animation: toast-in .18s ease; border-left: 6px solid var(--fire); }
+   @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+   
+   /* Foto da quadra levemente inclinada no hero */
+   .hero-photo { transform: rotate(3deg); border: 8px solid #fff; box-shadow: 14px 14px 0 var(--fire); }
+   @media (max-width: 1023px) { .hero-photo { transform: none; box-shadow: 8px 8px 0 var(--fire); } }
+   
+   @media (prefers-reduced-motion: reduce) {
+     * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+   }

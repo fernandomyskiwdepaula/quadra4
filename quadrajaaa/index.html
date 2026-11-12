@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QuadraJá — Reserve quadra por hora</title>
+  <meta name="description" content="Reserve quadras de society, futsal, vôlei, beach tennis, padel e mais, por hora, perto de você.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Big+Shoulders+Display:wght@800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tw-config.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:bg-white focus:p-3">Pular para o conteúdo</a>
+
+  <div id="site-header"></div>
+
+  <main id="conteudo">
+    <!-- HERO -->
+    <section class="relative overflow-x-clip bg-ink text-white on-ink" aria-labelledby="hero-title">
+      <div id="hero-lines" class="pointer-events-none absolute inset-0 opacity-30" aria-hidden="true" style="background-size:cover;background-position:center"></div>
+      <div class="relative mx-auto grid max-w-7xl items-center gap-10 px-4 pb-10 pt-12 lg:grid-cols-[1.1fr_.9fr] lg:pb-0 lg:pt-16">
+        <div>
+          <h1 id="hero-title" class="display text-[3.4rem] leading-[.88] sm:text-[5.5rem] lg:text-[7rem]">Quadra livre hoje à noite</h1>
+          <p class="mt-5 max-w-xl text-lg text-white/85 sm:text-xl">Veja o que está vago por hora, escolha o horário e reserve. Sem ligar para ninguém e sem esperar resposta no grupo.</p>
+        </div>
+        <div class="relative mx-auto w-full max-w-md lg:mb-24 lg:max-w-none lg:pl-8" id="hero-art"></div>
+      </div>
+      <div class="relative mx-auto max-w-7xl px-4 pb-8 lg:-mb-14 lg:pb-0" id="hero-search-wrap">
+        <div id="hero-search" class="relative z-10"></div>
+      </div>
+    </section>
+
+    <!-- Esportes -->
+    <section class="mx-auto max-w-7xl px-4 pb-10 pt-12 lg:pt-28" aria-labelledby="mod-title">
+      <h2 id="mod-title" class="display text-5xl leading-[.9] sm:text-6xl">Qual é o jogo?</h2>
+      <p class="mt-2 text-ash">Toque no esporte e veja as quadras disponíveis.</p>
+      <div id="sports" class="mt-6 grid grid-cols-2 gap-px border-2 border-ink bg-ink sm:grid-cols-4"></div>
+    </section>
+
+    <!-- Cidades -->
+    <section class="bg-chalk py-12" aria-labelledby="cidades-title">
+      <div class="mx-auto max-w-7xl px-4">
+        <h2 id="cidades-title" class="display text-5xl leading-[.9] sm:text-6xl">Onde jogar</h2>
+        <p class="mt-2 text-ash">As quatro cidades com mais quadras no QuadraJá.</p>
+        <div id="cities" class="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4"></div>
+      </div>
+    </section>
+
+    <!-- Quadras em destaque -->
+    <section class="mx-auto max-w-7xl px-4 py-12" aria-labelledby="dest-title">
+      <div class="flex items-end justify-between gap-4">
+        <div><h2 id="dest-title" class="display text-5xl leading-[.9] sm:text-6xl">Vagas para hoje</h2><p class="mt-2 text-ash">Quadras bem avaliadas com horário livre a partir das 17h.</p></div>
+        <div class="hidden gap-2 sm:flex">
+          <button type="button" id="feat-prev" class="btn btn-line !min-h-[44px] !px-3" aria-label="Quadras anteriores"><i data-lucide="chevron-left" class="h-5 w-5"></i></button>
+          <button type="button" id="feat-next" class="btn btn-line !min-h-[44px] !px-3" aria-label="Próximas quadras"><i data-lucide="chevron-right" class="h-5 w-5"></i></button>
+        </div>
+      </div>
+      <div id="featured" class="no-scrollbar -mx-1 mt-6 flex snap-x snap-mandatory gap-5 overflow-x-auto px-1 pb-6 pt-1"></div>
+    </section>
+
+    <!-- Como funciona (sequência real: 1, 2, 3) -->
+    <section id="como-funciona" class="bg-ink py-14 text-white on-ink" aria-labelledby="como-title">
+      <div class="mx-auto max-w-7xl px-4">
+        <h2 id="como-title" class="display text-5xl leading-[.9] sm:text-6xl">Da busca ao apito inicial</h2>
+        <ol class="mt-8 grid border-t-2 border-white/30 md:grid-cols-3">
+          <li class="border-b-2 border-white/30 py-6 md:border-b-0 md:border-r-2 md:pr-8"><span class="display block text-8xl leading-none text-fire">1</span><h3 class="mt-2 text-2xl font-bold">Procure</h3><p class="mt-1 text-white/80">Filtre por esporte, bairro e horário. A lista mostra só o que está vago.</p></li>
+          <li class="border-b-2 border-white/30 py-6 md:border-b-0 md:border-r-2 md:px-8"><span class="display block text-8xl leading-none text-fire">2</span><h3 class="mt-2 text-2xl font-bold">Escolha o horário</h3><p class="mt-1 text-white/80">Veja a agenda da quadra, marque 1, 2 ou 3 horas e confira o total antes de pagar.</p></li>
+          <li class="py-6 md:pl-8"><span class="display block text-8xl leading-none text-fire">3</span><h3 class="mt-2 text-2xl font-bold">Pague e jogue</h3><p class="mt-1 text-white/80">Pix ou cartão. A confirmação chega na hora e o horário fica reservado para você.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Anuncie seu espaço -->
+    <section id="anuncie" class="bg-fire py-14" aria-labelledby="anuncie-title">
+      <div class="mx-auto grid max-w-7xl items-start gap-10 px-4 lg:grid-cols-2">
+        <div>
+          <h2 id="anuncie-title" class="display text-5xl leading-[.9] sm:text-7xl">Quadra parada na terça à tarde?</h2>
+          <p class="mt-4 max-w-lg text-lg font-medium">Anuncie grátis. Você define preço e horários, recebe por Pix e só paga a taxa quando alguém reserva.</p>
+          <ul class="mt-5 space-y-2 text-lg font-semibold">
+            <li class="flex items-start gap-2"><i data-lucide="check" class="mt-1 h-5 w-5 shrink-0"></i>Agenda online no lugar do caderninho e do WhatsApp lotado</li>
+            <li class="flex items-start gap-2"><i data-lucide="check" class="mt-1 h-5 w-5 shrink-0"></i>Reserva confirmada só depois do pagamento</li>
+            <li class="flex items-start gap-2"><i data-lucide="check" class="mt-1 h-5 w-5 shrink-0"></i>Selo de anunciante verificado</li>
+          </ul>
+        </div>
+        <form id="anuncie-form" class="grid gap-4 border-4 border-ink bg-white p-6 sm:grid-cols-2" style="box-shadow:10px 10px 0 #000" aria-labelledby="form-title">
+          <h3 id="form-title" class="display text-3xl leading-none sm:col-span-2">Cadastre seu espaço</h3>
+          <div><label for="a-nome" class="mb-1 block text-sm font-semibold">Nome do espaço</label><input id="a-nome" required class="h-12 w-full border-2 border-ink px-3"></div>
+          <div><label for="a-sport" class="mb-1 block text-sm font-semibold">Esporte</label><select id="a-sport" class="h-12 w-full border-2 border-ink bg-white px-3"></select></div>
+          <div><label for="a-cidade" class="mb-1 block text-sm font-semibold">Cidade</label><input id="a-cidade" required class="h-12 w-full border-2 border-ink px-3"></div>
+          <div><label for="a-preco" class="mb-1 block text-sm font-semibold">Preço por hora (R$)</label><input id="a-preco" type="number" min="10" required class="h-12 w-full border-2 border-ink px-3"></div>
+          <div><label for="a-email" class="mb-1 block text-sm font-semibold">E-mail</label><input id="a-email" type="email" required class="h-12 w-full border-2 border-ink px-3"></div>
+          <div><label for="a-tel" class="mb-1 block text-sm font-semibold">WhatsApp</label><input id="a-tel" type="tel" placeholder="(41) 99999-0000" class="h-12 w-full border-2 border-ink px-3"></div>
+          <button type="submit" class="btn btn-ink sm:col-span-2">Enviar cadastro</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Depoimentos -->
+    <section class="mx-auto max-w-7xl px-4 py-14" aria-labelledby="dep-title">
+      <h2 id="dep-title" class="display text-5xl leading-[.9] sm:text-6xl">Quem já reservou</h2>
+      <div class="mt-8 grid gap-8 md:grid-cols-3">
+        <figure class="border-t-8 border-ink pt-4"><blockquote class="text-xl font-medium leading-snug">“Fechamos o racha de quinta em dois cliques. Cada um pagou sua parte no Pix e ninguém precisou cobrar no grupo.”</blockquote><figcaption class="mt-4 text-base"><b>Rafael</b>, racha de quinta no Batel, Curitiba</figcaption></figure>
+        <figure class="border-t-8 border-fire pt-4"><blockquote class="text-xl font-medium leading-snug">“Tenho duas quadras de padel. A agenda das manhãs de semana, que vivia vazia, agora enche.”</blockquote><figcaption class="mt-4 text-base"><b>Camila</b>, dona de arena em Moema, São Paulo</figcaption></figure>
+        <figure class="border-t-8 border-ink pt-4"><blockquote class="text-xl font-medium leading-snug">“Procurei beach tennis perto de casa, só depois das 19h. Em cinco minutos estava reservado.”</blockquote><figcaption class="mt-4 text-base"><b>João</b>, Barra da Tijuca, Rio de Janeiro</figcaption></figure>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="mx-auto max-w-3xl px-4 pb-16" aria-labelledby="faq-title">
+      <h2 id="faq-title" class="display text-5xl leading-[.9] sm:text-6xl">Dúvidas comuns</h2>
+      <div id="faq-list" class="mt-6 border-t-2 border-ink"></div>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/home.js"></script>
+</body>
+</html>
