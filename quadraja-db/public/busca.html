@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quadras para alugar — QuadraJá</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Big+Shoulders+Display:wght@800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tw-config.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <!-- Barra de busca compacta + filtros rápidos (fixos abaixo do header) -->
+  <div class="sticky top-[68px] z-30 border-b-2 border-ink bg-white">
+    <div class="mx-auto max-w-7xl px-4 py-3">
+      <div id="compact-search"></div>
+      <div id="chips" class="no-scrollbar mt-3 flex items-center gap-2 overflow-x-auto pb-1" role="toolbar" aria-label="Filtros rápidos"></div>
+    </div>
+  </div>
+
+  <main id="conteudo" class="mx-auto max-w-7xl px-4 py-6">
+    <nav class="text-sm" aria-label="Você está em">
+      <ol class="flex items-center gap-2"><li><a class="text-ember underline" href="index.html">Início</a></li><li aria-hidden="true">/</li><li><a class="text-ember underline" href="busca.html">Quadras</a></li><li aria-hidden="true">/</li><li id="bc-city" aria-current="page">Curitiba</li></ol>
+    </nav>
+
+    <div class="mt-3 flex flex-wrap items-end justify-between gap-3">
+      <h1 id="results-title" class="display text-4xl leading-[.95] sm:text-5xl" aria-live="polite">Quadras para alugar</h1>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" id="btn-map" class="btn btn-line btn-sm"><i data-lucide="map" class="h-4 w-4"></i>Abrir mapa</button>
+        <button type="button" id="btn-alert" class="btn btn-line btn-sm"><i data-lucide="bell-plus" class="h-4 w-4"></i>Criar alerta</button>
+        <div class="flex h-10 items-center gap-2 border-2 border-ink px-3">
+          <i data-lucide="arrow-up-down" class="h-4 w-4" aria-hidden="true"></i>
+          <label for="sort" class="sr-only">Ordenar por</label>
+          <select id="sort" class="bg-transparent font-semibold outline-none">
+            <option value="relevance">Ordenar</option>
+            <option value="price-asc">Menor preço</option>
+            <option value="price-desc">Maior preço</option>
+            <option value="rating">Melhor avaliadas</option>
+            <option value="dist">Mais próximas</option>
+          </select>
+        </div>
+        <div class="flex border-2 border-ink" role="group" aria-label="Modo de visualização">
+          <button type="button" id="view-grid" class="grid h-9 w-10 place-items-center" aria-label="Ver em grade" aria-pressed="true"><i data-lucide="layout-grid" class="h-4 w-4"></i></button>
+          <button type="button" id="view-list" class="grid h-9 w-10 place-items-center" aria-label="Ver em lista" aria-pressed="false"><i data-lucide="list" class="h-4 w-4"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 grid gap-6 lg:grid-cols-[300px_1fr]">
+      <div id="filters-backdrop" class="fixed inset-0 z-50 hidden bg-black/60 lg:hidden" aria-hidden="true"></div>
+
+      <!-- FILTROS (sidebar no desktop, gaveta no mobile) -->
+      <aside id="filters" class="lg:sticky lg:top-52 lg:max-h-[calc(100vh-14rem)] lg:self-start lg:overflow-y-auto lg:border-2 lg:border-ink" aria-label="Filtros" tabindex="-1">
+        <div class="flex items-center justify-between border-b-2 border-ink p-4">
+          <h2 class="display flex items-center gap-2 text-3xl leading-none">Filtros <span id="filters-count" class="text-xl text-ember"></span></h2>
+          <button type="button" id="filters-close" class="p-2 hover:bg-chalk lg:hidden" aria-label="Fechar filtros"><i data-lucide="x" class="h-5 w-5"></i></button>
+        </div>
+        <div id="filters-body" class="space-y-6 p-4"></div>
+        <div class="sticky bottom-0 flex gap-2 border-t-2 border-ink bg-white p-4">
+          <button type="button" id="filters-clear" class="btn btn-line btn-sm flex-1">Limpar</button>
+          <button type="button" id="filters-apply" class="btn btn-fire btn-sm flex-1">Aplicar</button>
+        </div>
+      </aside>
+
+      <!-- RESULTADOS -->
+      <section aria-label="Resultados">
+        <div id="results"></div>
+        <nav id="pagination" class="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Paginação"></nav>
+      </section>
+    </div>
+  </main>
+
+  <!-- Botão flutuante de filtros (mobile) -->
+  <button type="button" id="fab-filters" class="btn btn-ink fixed bottom-5 left-1/2 z-40 -translate-x-1/2 border-fire lg:hidden"><i data-lucide="sliders-horizontal" class="h-5 w-5"></i>Filtros <span id="fab-count" class="bg-fire px-2 text-ink"></span></button>
+
+  <!-- Modal de mapa -->
+  <div id="map-modal" data-modal role="dialog" aria-modal="true" aria-labelledby="map-title" class="fixed inset-0 z-[90] hidden items-center justify-center bg-black/70 p-4">
+    <div class="flex h-[85vh] w-full max-w-5xl flex-col border-4 border-ink bg-white">
+      <div class="flex items-center justify-between border-b-2 border-ink p-4">
+        <h2 id="map-title" class="display text-3xl leading-none">Mapa das quadras</h2>
+        <button type="button" data-close-modal class="p-2 hover:bg-chalk" aria-label="Fechar mapa"><i data-lucide="x" class="h-5 w-5"></i></button>
+      </div>
+      <div id="map-canvas" class="relative flex-1 overflow-hidden bg-chalk"></div>
+      <p class="border-t-2 border-ink p-3 text-sm text-ash">Mapa ilustrativo: as posições dos preços são fictícias nesta demonstração.</p>
+    </div>
+  </div>
+
+  <div id="site-footer"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/search.js"></script>
+</body>
+</html>
