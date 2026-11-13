@@ -1,0 +1,629 @@
+-- =====================================================================
+-- QuadraJá 4 — banco de dados (modelo relacional + dados + consultas)
+-- Baseado no projeto quadrajaaa (js/data.js): 9 esportes, 7 pisos,
+-- 11 comodidades, 4 cidades e 30 quadras.
+-- Compatível com MySQL 8 / MariaDB (comandos padrão SQL).
+-- =====================================================================
+
+DROP DATABASE IF EXISTS quadraja4;
+CREATE DATABASE quadraja4 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE quadraja4;
+
+-- =====================================================================
+-- 1) ESTRUTURA (DDL)
+-- =====================================================================
+CREATE TABLE esportes (
+  id        VARCHAR(20)  PRIMARY KEY,
+  nome      VARCHAR(40)  NOT NULL,
+  apelido   VARCHAR(40)  NOT NULL
+);
+
+CREATE TABLE pisos (
+  id    VARCHAR(20) PRIMARY KEY,
+  nome  VARCHAR(40) NOT NULL
+);
+
+CREATE TABLE comodidades (
+  id    VARCHAR(20) PRIMARY KEY,
+  nome  VARCHAR(40) NOT NULL,
+  icone VARCHAR(30)
+);
+
+CREATE TABLE cidades (
+  id    INT         PRIMARY KEY,
+  nome  VARCHAR(40) NOT NULL,
+  uf    CHAR(2)     NOT NULL
+);
+
+CREATE TABLE anunciantes (
+  id        INT          PRIMARY KEY,
+  nome      VARCHAR(60)  NOT NULL,
+  telefone  VARCHAR(15),
+  verificado BOOLEAN     NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE quadras (
+  id           INT           PRIMARY KEY,
+  nome         VARCHAR(60)   NOT NULL,
+  esporte_id   VARCHAR(20)   NOT NULL,
+  bairro       VARCHAR(40)   NOT NULL,
+  cidade_id    INT           NOT NULL,
+  rua          VARCHAR(80)   NOT NULL,
+  preco_hora   DECIMAL(8,2)  NOT NULL CHECK (preco_hora > 0),
+  piso_id      VARCHAR(20)   NOT NULL,
+  tamanho_m2   INT           NOT NULL,
+  capacidade   INT           NOT NULL,
+  nota         DECIMAL(2,1)  NOT NULL CHECK (nota BETWEEN 0 AND 5),
+  avaliacoes   INT           NOT NULL DEFAULT 0,
+  destaque     BOOLEAN       NOT NULL DEFAULT FALSE,
+  anunciante_id INT          NOT NULL,
+  distancia_km DECIMAL(4,1),
+  descricao    TEXT,
+  FOREIGN KEY (esporte_id)    REFERENCES esportes(id),
+  FOREIGN KEY (cidade_id)     REFERENCES cidades(id),
+  FOREIGN KEY (piso_id)       REFERENCES pisos(id),
+  FOREIGN KEY (anunciante_id) REFERENCES anunciantes(id)
+);
+
+-- Relação N:N entre quadras e comodidades
+CREATE TABLE quadra_comodidades (
+  quadra_id     INT         NOT NULL,
+  comodidade_id VARCHAR(20) NOT NULL,
+  PRIMARY KEY (quadra_id, comodidade_id),
+  FOREIGN KEY (quadra_id)     REFERENCES quadras(id),
+  FOREIGN KEY (comodidade_id) REFERENCES comodidades(id)
+);
+
+-- Horários de início livres hoje (17h a 22h), como no card "Vago hoje"
+CREATE TABLE horarios_livres (
+  quadra_id INT NOT NULL,
+  hora      INT NOT NULL CHECK (hora BETWEEN 7 AND 22),
+  PRIMARY KEY (quadra_id, hora),
+  FOREIGN KEY (quadra_id) REFERENCES quadras(id)
+);
+
+CREATE TABLE usuarios (
+  id     INT          PRIMARY KEY,
+  nome   VARCHAR(60)  NOT NULL,
+  email  VARCHAR(80)  NOT NULL UNIQUE,
+  cidade_id INT,
+  FOREIGN KEY (cidade_id) REFERENCES cidades(id)
+);
+
+CREATE TABLE favoritos (
+  usuario_id INT NOT NULL,
+  quadra_id  INT NOT NULL,
+  PRIMARY KEY (usuario_id, quadra_id),
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  FOREIGN KEY (quadra_id)  REFERENCES quadras(id)
+);
+
+-- Reserva: 1, 2 ou 3 horas; total = preço x horas + taxa de serviço de 7%
+CREATE TABLE reservas (
+  id          INT          PRIMARY KEY,
+  usuario_id  INT          NOT NULL,
+  quadra_id   INT          NOT NULL,
+  data_jogo   DATE         NOT NULL,
+  hora_inicio INT          NOT NULL CHECK (hora_inicio BETWEEN 7 AND 22),
+  duracao_h   INT          NOT NULL CHECK (duracao_h BETWEEN 1 AND 3),
+  subtotal    DECIMAL(8,2) NOT NULL,
+  taxa        DECIMAL(8,2) NOT NULL,
+  total       DECIMAL(8,2) NOT NULL,
+  status      VARCHAR(12)  NOT NULL DEFAULT 'confirmada',
+  UNIQUE (quadra_id, data_jogo, hora_inicio),
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  FOREIGN KEY (quadra_id)  REFERENCES quadras(id)
+);
+
+CREATE INDEX idx_quadras_cidade_esporte ON quadras (cidade_id, esporte_id);
+CREATE INDEX idx_quadras_preco ON quadras (preco_hora);
+
+-- =====================================================================
+-- 2) DADOS (INSERT)
+-- =====================================================================
+
+INSERT INTO esportes (id, nome, apelido) VALUES
+  ('society', 'Futebol Society', 'Society'),
+  ('futsal', 'Futsal', 'Futsal'),
+  ('volei', 'Vôlei', 'Vôlei'),
+  ('volei-praia', 'Vôlei de praia', 'Vôlei de praia'),
+  ('beach-tennis', 'Beach tennis', 'Beach tennis'),
+  ('basquete', 'Basquete', 'Basquete'),
+  ('tenis', 'Tênis', 'Tênis'),
+  ('padel', 'Padel', 'Padel'),
+  ('poli', 'Poliesportiva', 'Poliesportiva');
+
+INSERT INTO pisos (id, nome) VALUES
+  ('grama-sintetica', 'Grama sintética'),
+  ('grama-natural', 'Grama natural'),
+  ('areia', 'Areia'),
+  ('cimento', 'Cimento'),
+  ('madeira', 'Madeira'),
+  ('saibro', 'Saibro'),
+  ('borracha', 'Quadra de borracha');
+
+INSERT INTO comodidades (id, nome, icone) VALUES
+  ('iluminacao', 'Iluminação noturna', 'lightbulb'),
+  ('vestiario', 'Vestiário', 'shirt'),
+  ('chuveiro', 'Chuveiro', 'shower-head'),
+  ('estacionamento', 'Estacionamento', 'car'),
+  ('lanchonete', 'Lanchonete/bar', 'utensils'),
+  ('churrasqueira', 'Churrasqueira', 'flame'),
+  ('arquibancada', 'Arquibancada', 'users'),
+  ('coberta', 'Quadra coberta', 'umbrella'),
+  ('bola-coletes', 'Aluguel de bola/coletes', 'circle-dot'),
+  ('wifi', 'Wi-Fi', 'wifi'),
+  ('acessibilidade', 'Acessibilidade', 'accessibility');
+
+INSERT INTO cidades (id, nome, uf) VALUES
+  (1, 'Curitiba', 'PR'),
+  (2, 'São Paulo', 'SP'),
+  (3, 'Rio de Janeiro', 'RJ'),
+  (4, 'Belo Horizonte', 'MG');
+
+INSERT INTO anunciantes (id, nome, telefone) VALUES
+  (1, 'Quadras do Parque', '21999990004'),
+  (2, 'Espaço Atleta', '31999990005'),
+  (3, 'Complexo Esportivo Vitória', '31999990005'),
+  (4, 'Grupo Jogue Bem', '41999990002'),
+  (5, 'Arena Esportes Ltda', '31999990005'),
+  (6, 'Clube Esportivo Aurora', '31999990005'),
+  (7, 'Sport Center Total', '41999990002');
+
+INSERT INTO quadras (id, nome, esporte_id, bairro, cidade_id, rua, preco_hora, piso_id, tamanho_m2, capacidade, nota, avaliacoes, destaque, anunciante_id, distancia_km, descricao) VALUES
+  (1, 'Arena Batel Society', 'society', 'Batel', 1, 'Av. República Argentina, 1905', 160.00, 'grama-sintetica', 800, 14, 4.3, 185, TRUE, 1, 10.6, 'Arena Batel Society fica em Batel, Curitiba. Piso de grama sintética, 800 m² e espaço para 14 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (2, 'Campo do Água Verde', 'society', 'Água Verde', 1, 'Av. Brasil, 125', 140.00, 'grama-sintetica', 750, 14, 4.5, 27, FALSE, 2, 1.7, 'Campo do Água Verde fica em Água Verde, Curitiba. Piso de grama sintética, 750 m² e espaço para 14 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (3, 'Ginásio Portão Futsal', 'futsal', 'Portão', 1, 'Av. Brasil, 1214', 110.00, 'cimento', 450, 10, 4.3, 160, FALSE, 3, 5.2, 'Ginásio Portão Futsal fica em Portão, Curitiba. Piso de cimento, 450 m² e espaço para 10 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (4, 'Quadra Santa Felicidade', 'futsal', 'Santa Felicidade', 1, 'Rua Bom Jesus, 1951', 120.00, 'borracha', 440, 10, 4.6, 97, FALSE, 4, 10.3, 'Quadra Santa Felicidade fica em Santa Felicidade, Curitiba. Piso de quadra de borracha, 440 m² e espaço para 10 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (5, 'Vôlei Clube Bigorrilho', 'volei', 'Bigorrilho', 1, 'Rua Mateus Leme, 1150', 100.00, 'madeira', 280, 12, 5.0, 214, TRUE, 5, 13.2, 'Vôlei Clube Bigorrilho fica em Bigorrilho, Curitiba. Piso de madeira, 280 m² e espaço para 12 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (6, 'Areia Mossunguê', 'volei-praia', 'Mossunguê', 1, 'Rua Mateus Leme, 948', 80.00, 'areia', 250, 8, 4.0, 62, FALSE, 3, 14.3, 'Areia Mossunguê fica em Mossunguê, Curitiba. Piso de areia, 250 m² e espaço para 8 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (7, 'Beach Arena Ecoville', 'beach-tennis', 'Ecoville', 1, 'Av. das Américas, 2118', 90.00, 'areia', 200, 4, 4.2, 48, TRUE, 1, 5.4, 'Beach Arena Ecoville fica em Ecoville, Curitiba. Piso de areia, 200 m² e espaço para 4 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (8, 'Basket Center Centro Cívico', 'basquete', 'Centro Cívico', 1, 'Rua das Palmeiras, 779', 130.00, 'madeira', 420, 10, 4.9, 13, FALSE, 3, 1.6, 'Basket Center Centro Cívico fica em Centro Cívico, Curitiba. Piso de madeira, 420 m² e espaço para 10 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (9, 'Tênis Park Cabral', 'tenis', 'Cabral', 1, 'Rua XV de Novembro, 456', 150.00, 'saibro', 260, 4, 4.5, 26, TRUE, 1, 14.0, 'Tênis Park Cabral fica em Cabral, Curitiba. Piso de saibro, 260 m² e espaço para 4 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (10, 'Padel House Juvevê', 'padel', 'Juvevê', 1, 'Rua Padre Anchieta, 279', 170.00, 'grama-sintetica', 200, 4, 4.5, 16, FALSE, 6, 5.9, 'Padel House Juvevê fica em Juvevê, Curitiba. Piso de grama sintética, 200 m² e espaço para 4 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (11, 'Ginásio Poliesportivo Boqueirão', 'poli', 'Boqueirão', 1, 'Rua XV de Novembro, 2754', 190.00, 'madeira', 900, 20, 4.8, 111, FALSE, 2, 5.2, 'Ginásio Poliesportivo Boqueirão fica em Boqueirão, Curitiba. Piso de madeira, 900 m² e espaço para 20 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (12, 'Campo Novo Mundo FC', 'society', 'Novo Mundo', 1, 'Av. das Américas, 724', 180.00, 'grama-natural', 1000, 14, 4.6, 176, FALSE, 4, 1.2, 'Campo Novo Mundo FC fica em Novo Mundo, Curitiba. Piso de grama natural, 1000 m² e espaço para 14 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (13, 'Society Hauer Premium', 'society', 'Hauer', 1, 'Av. República Argentina, 1218', 130.00, 'grama-sintetica', 700, 14, 4.7, 149, TRUE, 3, 11.6, 'Society Hauer Premium fica em Hauer, Curitiba. Piso de grama sintética, 700 m² e espaço para 14 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (14, 'Futsal Cajuru Indoor', 'futsal', 'Cajuru', 1, 'Rua Bom Jesus, 674', 90.00, 'cimento', 420, 10, 4.6, 244, TRUE, 1, 3.9, 'Futsal Cajuru Indoor fica em Cajuru, Curitiba. Piso de cimento, 420 m² e espaço para 10 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (15, 'Beach Sports Campo Comprido', 'beach-tennis', 'Campo Comprido', 1, 'Av. República Argentina, 1185', 75.00, 'areia', 190, 4, 4.4, 20, FALSE, 6, 13.1, 'Beach Sports Campo Comprido fica em Campo Comprido, Curitiba. Piso de areia, 190 m² e espaço para 4 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (16, 'Padel Club Alto da XV', 'padel', 'Alto da XV', 1, 'Av. das Américas, 1906', 150.00, 'grama-sintetica', 200, 4, 4.9, 159, FALSE, 4, 0.6, 'Padel Club Alto da XV fica em Alto da XV, Curitiba. Piso de grama sintética, 200 m² e espaço para 4 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (17, 'Arena Vila Madalena', 'society', 'Vila Madalena', 2, 'Av. República Argentina, 2372', 260.00, 'grama-sintetica', 850, 14, 4.2, 168, TRUE, 2, 13.2, 'Arena Vila Madalena fica em Vila Madalena, São Paulo. Piso de grama sintética, 850 m² e espaço para 14 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (18, 'Quadra Pinheiros Futsal', 'futsal', 'Pinheiros', 2, 'Av. Brasil, 878', 220.00, 'borracha', 460, 10, 4.7, 190, FALSE, 5, 2.5, 'Quadra Pinheiros Futsal fica em Pinheiros, São Paulo. Piso de quadra de borracha, 460 m² e espaço para 10 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (19, 'Padel Moema Club', 'padel', 'Moema', 2, 'Rua XV de Novembro, 1170', 280.00, 'grama-sintetica', 200, 4, 4.3, 224, FALSE, 7, 7.6, 'Padel Moema Club fica em Moema, São Paulo. Piso de grama sintética, 200 m² e espaço para 4 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (20, 'Basquete Vila Mariana', 'basquete', 'Vila Mariana', 2, 'Av. República Argentina, 2177', 210.00, 'madeira', 430, 10, 4.5, 28, FALSE, 6, 3.4, 'Basquete Vila Mariana fica em Vila Mariana, São Paulo. Piso de madeira, 430 m² e espaço para 10 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (21, 'Tênis Itaim Court', 'tenis', 'Itaim Bibi', 2, 'Rua XV de Novembro, 1513', 240.00, 'saibro', 270, 4, 4.8, 117, TRUE, 5, 12.5, 'Tênis Itaim Court fica em Itaim Bibi, São Paulo. Piso de saibro, 270 m² e espaço para 4 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (22, 'Poli Tatuapé', 'poli', 'Tatuapé', 2, 'Rua das Palmeiras, 1636', 230.00, 'madeira', 880, 20, 4.3, 224, FALSE, 5, 6.7, 'Poli Tatuapé fica em Tatuapé, São Paulo. Piso de madeira, 880 m² e espaço para 20 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (23, 'Vôlei de Praia Ipanema', 'volei-praia', 'Ipanema', 3, 'Rua das Palmeiras, 1945', 120.00, 'areia', 260, 8, 4.1, 25, FALSE, 2, 1.8, 'Vôlei de Praia Ipanema fica em Ipanema, Rio de Janeiro. Piso de areia, 260 m² e espaço para 8 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (24, 'Beach Tennis Barra', 'beach-tennis', 'Barra da Tijuca', 3, 'Av. Brasil, 2337', 140.00, 'areia', 200, 4, 4.2, 42, FALSE, 2, 4.7, 'Beach Tennis Barra fica em Barra da Tijuca, Rio de Janeiro. Piso de areia, 200 m² e espaço para 4 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (25, 'Society Recreio Arena', 'society', 'Recreio', 3, 'Av. Brasil, 1548', 200.00, 'grama-sintetica', 820, 14, 4.7, 81, TRUE, 3, 6.8, 'Society Recreio Arena fica em Recreio, Rio de Janeiro. Piso de grama sintética, 820 m² e espaço para 14 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (26, 'Futsal Tijuca Indoor', 'futsal', 'Tijuca', 3, 'Rua Padre Anchieta, 792', 150.00, 'cimento', 440, 10, 4.6, 68, FALSE, 6, 11.9, 'Futsal Tijuca Indoor fica em Tijuca, Rio de Janeiro. Piso de cimento, 440 m² e espaço para 10 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (27, 'Arena Savassi Society', 'society', 'Savassi', 4, 'Rua XV de Novembro, 887', 170.00, 'grama-sintetica', 780, 14, 4.3, 17, FALSE, 2, 4.4, 'Arena Savassi Society fica em Savassi, Belo Horizonte. Piso de grama sintética, 780 m² e espaço para 14 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (28, 'Padel Lourdes', 'padel', 'Lourdes', 4, 'Av. República Argentina, 581', 190.00, 'grama-sintetica', 200, 4, 4.2, 250, TRUE, 7, 1.7, 'Padel Lourdes fica em Lourdes, Belo Horizonte. Piso de grama sintética, 200 m² e espaço para 4 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (29, 'Vôlei Pampulha', 'volei', 'Pampulha', 4, 'Rua Mateus Leme, 1211', 110.00, 'madeira', 290, 12, 4.4, 116, TRUE, 7, 11.0, 'Vôlei Pampulha fica em Pampulha, Belo Horizonte. Piso de madeira, 290 m² e espaço para 12 jogadores. Serve para racha entre amigos, treino, aula e confraternização.'),
+  (30, 'Basquete Funcionários', 'basquete', 'Funcionários', 4, 'Rua das Palmeiras, 1198', 125.00, 'borracha', 410, 10, 4.7, 127, FALSE, 7, 11.2, 'Basquete Funcionários fica em Funcionários, Belo Horizonte. Piso de quadra de borracha, 410 m² e espaço para 10 jogadores. Serve para racha entre amigos, treino, aula e confraternização.');
+
+INSERT INTO quadra_comodidades (quadra_id, comodidade_id) VALUES
+  (1, 'iluminacao'),
+  (1, 'lanchonete'),
+  (1, 'churrasqueira'),
+  (1, 'coberta'),
+  (1, 'acessibilidade'),
+  (2, 'iluminacao'),
+  (2, 'lanchonete'),
+  (2, 'acessibilidade'),
+  (3, 'iluminacao'),
+  (3, 'vestiario'),
+  (3, 'arquibancada'),
+  (3, 'coberta'),
+  (3, 'bola-coletes'),
+  (3, 'acessibilidade'),
+  (4, 'iluminacao'),
+  (4, 'chuveiro'),
+  (4, 'lanchonete'),
+  (4, 'arquibancada'),
+  (4, 'bola-coletes'),
+  (4, 'wifi'),
+  (5, 'iluminacao'),
+  (5, 'chuveiro'),
+  (5, 'lanchonete'),
+  (5, 'coberta'),
+  (5, 'bola-coletes'),
+  (5, 'acessibilidade'),
+  (6, 'iluminacao'),
+  (6, 'vestiario'),
+  (6, 'estacionamento'),
+  (6, 'churrasqueira'),
+  (7, 'estacionamento'),
+  (7, 'bola-coletes'),
+  (7, 'wifi'),
+  (8, 'iluminacao'),
+  (8, 'vestiario'),
+  (8, 'chuveiro'),
+  (8, 'coberta'),
+  (8, 'bola-coletes'),
+  (9, 'iluminacao'),
+  (9, 'chuveiro'),
+  (9, 'lanchonete'),
+  (9, 'wifi'),
+  (10, 'estacionamento'),
+  (10, 'arquibancada'),
+  (10, 'bola-coletes'),
+  (10, 'wifi'),
+  (10, 'acessibilidade'),
+  (11, 'coberta'),
+  (11, 'bola-coletes'),
+  (11, 'wifi'),
+  (12, 'iluminacao'),
+  (12, 'chuveiro'),
+  (12, 'lanchonete'),
+  (12, 'churrasqueira'),
+  (12, 'arquibancada'),
+  (12, 'bola-coletes'),
+  (12, 'acessibilidade'),
+  (13, 'iluminacao'),
+  (13, 'chuveiro'),
+  (13, 'coberta'),
+  (13, 'bola-coletes'),
+  (13, 'wifi'),
+  (14, 'iluminacao'),
+  (14, 'chuveiro'),
+  (14, 'lanchonete'),
+  (14, 'arquibancada'),
+  (14, 'coberta'),
+  (14, 'acessibilidade'),
+  (15, 'iluminacao'),
+  (15, 'vestiario'),
+  (15, 'wifi'),
+  (15, 'acessibilidade'),
+  (16, 'iluminacao'),
+  (16, 'estacionamento'),
+  (16, 'lanchonete'),
+  (16, 'wifi'),
+  (17, 'iluminacao'),
+  (17, 'estacionamento'),
+  (17, 'churrasqueira'),
+  (18, 'iluminacao'),
+  (18, 'vestiario'),
+  (18, 'churrasqueira'),
+  (18, 'coberta'),
+  (18, 'acessibilidade'),
+  (19, 'iluminacao'),
+  (19, 'bola-coletes'),
+  (20, 'iluminacao'),
+  (20, 'vestiario'),
+  (20, 'lanchonete'),
+  (20, 'arquibancada'),
+  (20, 'coberta'),
+  (21, 'iluminacao'),
+  (21, 'vestiario'),
+  (21, 'estacionamento'),
+  (21, 'lanchonete'),
+  (21, 'bola-coletes'),
+  (21, 'wifi'),
+  (22, 'iluminacao'),
+  (22, 'vestiario'),
+  (22, 'wifi'),
+  (22, 'acessibilidade'),
+  (23, 'iluminacao'),
+  (23, 'vestiario'),
+  (23, 'chuveiro'),
+  (23, 'estacionamento'),
+  (23, 'lanchonete'),
+  (23, 'bola-coletes'),
+  (23, 'wifi'),
+  (24, 'iluminacao'),
+  (24, 'arquibancada'),
+  (24, 'acessibilidade'),
+  (25, 'iluminacao'),
+  (25, 'chuveiro'),
+  (25, 'arquibancada'),
+  (26, 'iluminacao'),
+  (26, 'vestiario'),
+  (26, 'estacionamento'),
+  (26, 'lanchonete'),
+  (26, 'coberta'),
+  (26, 'bola-coletes'),
+  (26, 'acessibilidade'),
+  (27, 'chuveiro'),
+  (27, 'churrasqueira'),
+  (27, 'bola-coletes'),
+  (27, 'acessibilidade'),
+  (28, 'iluminacao'),
+  (28, 'estacionamento'),
+  (28, 'arquibancada'),
+  (28, 'bola-coletes'),
+  (28, 'wifi'),
+  (28, 'acessibilidade'),
+  (29, 'iluminacao'),
+  (29, 'vestiario'),
+  (29, 'chuveiro'),
+  (29, 'lanchonete'),
+  (29, 'churrasqueira'),
+  (29, 'arquibancada'),
+  (29, 'coberta'),
+  (29, 'bola-coletes'),
+  (29, 'acessibilidade'),
+  (30, 'iluminacao'),
+  (30, 'vestiario'),
+  (30, 'estacionamento'),
+  (30, 'churrasqueira'),
+  (30, 'coberta'),
+  (30, 'bola-coletes'),
+  (30, 'wifi');
+
+INSERT INTO horarios_livres (quadra_id, hora) VALUES
+  (1, 18),
+  (1, 22),
+  (2, 19),
+  (2, 20),
+  (2, 21),
+  (2, 22),
+  (3, 17),
+  (3, 18),
+  (3, 19),
+  (3, 20),
+  (3, 22),
+  (4, 17),
+  (4, 18),
+  (4, 19),
+  (4, 21),
+  (5, 18),
+  (5, 21),
+  (6, 17),
+  (6, 19),
+  (6, 20),
+  (6, 22),
+  (7, 17),
+  (7, 18),
+  (7, 19),
+  (7, 20),
+  (7, 21),
+  (7, 22),
+  (8, 17),
+  (8, 18),
+  (8, 19),
+  (8, 20),
+  (8, 21),
+  (9, 17),
+  (9, 22),
+  (10, 19),
+  (10, 21),
+  (10, 22),
+  (11, 18),
+  (11, 19),
+  (11, 21),
+  (12, 19),
+  (12, 21),
+  (12, 22),
+  (13, 17),
+  (13, 18),
+  (13, 19),
+  (13, 21),
+  (13, 22),
+  (14, 18),
+  (14, 19),
+  (14, 21),
+  (14, 22),
+  (15, 18),
+  (15, 20),
+  (15, 21),
+  (16, 17),
+  (16, 18),
+  (16, 20),
+  (16, 21),
+  (16, 22),
+  (17, 17),
+  (17, 18),
+  (17, 19),
+  (17, 20),
+  (17, 21),
+  (17, 22),
+  (18, 17),
+  (18, 20),
+  (19, 18),
+  (19, 22),
+  (20, 17),
+  (20, 19),
+  (20, 20),
+  (20, 21),
+  (20, 22),
+  (21, 18),
+  (21, 19),
+  (21, 20),
+  (21, 21),
+  (22, 17),
+  (22, 18),
+  (22, 19),
+  (22, 20),
+  (23, 17),
+  (23, 18),
+  (23, 21),
+  (23, 22),
+  (24, 17),
+  (24, 18),
+  (24, 19),
+  (24, 20),
+  (24, 21),
+  (24, 22),
+  (25, 18),
+  (25, 19),
+  (25, 20),
+  (25, 22),
+  (26, 17),
+  (26, 19),
+  (26, 20),
+  (26, 22),
+  (27, 17),
+  (27, 19),
+  (27, 21),
+  (27, 22),
+  (28, 17),
+  (28, 18),
+  (28, 21),
+  (29, 17),
+  (29, 18),
+  (29, 19),
+  (29, 20),
+  (29, 22),
+  (30, 18),
+  (30, 19),
+  (30, 21),
+  (30, 22);
+
+-- Usuários, favoritos e reservas de exemplo
+INSERT INTO usuarios (id, nome, email, cidade_id) VALUES
+  (1, 'Rafael Souza',  'rafael@email.com', 1),
+  (2, 'Camila Alves',  'camila@email.com', 2),
+  (3, 'João Pereira',  'joao@email.com',   3),
+  (4, 'Letícia Rocha', 'leticia@email.com', 1),
+  (5, 'Marcos Lima',   'marcos@email.com', 4);
+
+INSERT INTO favoritos (usuario_id, quadra_id) VALUES
+  (1, 1), (1, 13), (1, 10), (2, 19), (3, 24), (4, 7), (4, 1), (5, 27);
+
+INSERT INTO reservas (id, usuario_id, quadra_id, data_jogo, hora_inicio, duracao_h, subtotal, taxa, total, status) VALUES
+  (1, 1, 1, '2026-11-20', 20, 2, 320.00, 22.00, 342.00, 'confirmada'),
+  (2, 2, 19, '2026-11-21', 19, 1, 280.00, 20.00, 300.00, 'confirmada'),
+  (3, 3, 24, '2026-11-22', 18, 1, 140.00, 10.00, 150.00, 'confirmada'),
+  (4, 4, 7, '2026-11-20', 21, 1, 90.00, 6.00, 96.00, 'confirmada'),
+  (5, 1, 13, '2026-11-27', 20, 3, 390.00, 27.00, 417.00, 'confirmada'),
+  (6, 5, 28, '2026-11-25', 19, 2, 380.00, 27.00, 407.00, 'confirmada'),
+  (7, 4, 1, '2026-11-28', 17, 2, 320.00, 22.00, 342.00, 'confirmada'),
+  (8, 2, 17, '2026-11-29', 22, 1, 260.00, 18.00, 278.00, 'confirmada');
+
+-- =====================================================================
+-- 3) CONSULTAS (SELECT) — da mais simples à mais completa
+-- =====================================================================
+
+-- 3.1 SELECT básico: todas as quadras
+SELECT * FROM quadras;
+
+-- 3.2 Colunas escolhidas, com apelido (AS)
+SELECT nome AS quadra, bairro, preco_hora AS preco FROM quadras;
+
+-- 3.3 WHERE: quadras de society com preço até R$ 160
+SELECT nome, bairro, preco_hora
+FROM quadras
+WHERE esporte_id = 'society' AND preco_hora <= 160;
+
+-- 3.4 BETWEEN, IN e LIKE
+SELECT nome, preco_hora FROM quadras WHERE preco_hora BETWEEN 100 AND 150;
+SELECT nome, esporte_id FROM quadras WHERE esporte_id IN ('padel', 'tenis', 'beach-tennis');
+SELECT nome FROM quadras WHERE nome LIKE '%Arena%';
+
+-- 3.5 ORDER BY e LIMIT: as 5 mais baratas e as 5 melhores avaliadas
+SELECT nome, preco_hora FROM quadras ORDER BY preco_hora ASC LIMIT 5;
+SELECT nome, nota, avaliacoes FROM quadras ORDER BY nota DESC, avaliacoes DESC LIMIT 5;
+
+-- 3.6 DISTINCT: bairros que têm quadra
+SELECT DISTINCT bairro FROM quadras ORDER BY bairro;
+
+-- 3.7 Funções de agregação
+SELECT COUNT(*) AS total_quadras,
+       MIN(preco_hora) AS menor_preco,
+       MAX(preco_hora) AS maior_preco,
+       ROUND(AVG(preco_hora), 2) AS preco_medio
+FROM quadras;
+
+-- 3.8 INNER JOIN: quadra + esporte + cidade + piso (a listagem da busca)
+SELECT q.id, q.nome, e.nome AS esporte, q.bairro, c.nome AS cidade, c.uf,
+       p.nome AS piso, q.preco_hora
+FROM quadras q
+JOIN esportes e ON e.id = q.esporte_id
+JOIN cidades  c ON c.id = q.cidade_id
+JOIN pisos    p ON p.id = q.piso_id
+ORDER BY c.nome, q.nome;
+
+-- 3.9 GROUP BY: quantidade de quadras e preço médio por cidade
+SELECT c.nome AS cidade, COUNT(*) AS quadras, ROUND(AVG(q.preco_hora), 2) AS preco_medio
+FROM quadras q
+JOIN cidades c ON c.id = q.cidade_id
+GROUP BY c.nome
+ORDER BY quadras DESC;
+
+-- 3.10 GROUP BY + HAVING: esportes com mais de 3 quadras
+SELECT e.nome AS esporte, COUNT(*) AS quadras
+FROM quadras q
+JOIN esportes e ON e.id = q.esporte_id
+GROUP BY e.nome
+HAVING COUNT(*) > 3
+ORDER BY quadras DESC;
+
+-- 3.11 Filtro da página de busca: Curitiba, até R$ 150, com iluminação e livre às 20h
+SELECT q.id, q.nome, q.bairro, q.preco_hora, q.nota
+FROM quadras q
+JOIN cidades c ON c.id = q.cidade_id
+JOIN quadra_comodidades qc ON qc.quadra_id = q.id AND qc.comodidade_id = 'iluminacao'
+JOIN horarios_livres h ON h.quadra_id = q.id AND h.hora = 20
+WHERE c.nome = 'Curitiba' AND q.preco_hora <= 150
+ORDER BY q.destaque DESC, q.nota DESC;
+
+-- 3.12 Comodidades de uma quadra (página de detalhe, quadra 1)
+SELECT q.nome AS quadra, cm.nome AS comodidade
+FROM quadras q
+JOIN quadra_comodidades qc ON qc.quadra_id = q.id
+JOIN comodidades cm ON cm.id = qc.comodidade_id
+WHERE q.id = 1;
+
+-- 3.13 LEFT JOIN: quadras sem nenhuma reserva
+SELECT q.id, q.nome
+FROM quadras q
+LEFT JOIN reservas r ON r.quadra_id = q.id
+WHERE r.id IS NULL;
+
+-- 3.14 Subconsulta: quadras mais caras que a média da própria cidade
+SELECT q.nome, q.preco_hora, q.cidade_id
+FROM quadras q
+WHERE q.preco_hora > (SELECT AVG(q2.preco_hora) FROM quadras q2 WHERE q2.cidade_id = q.cidade_id)
+ORDER BY q.cidade_id, q.preco_hora DESC;
+
+-- 3.15 Reservas com nome do usuário, da quadra e total
+SELECT r.id, u.nome AS usuario, q.nome AS quadra, r.data_jogo,
+       CONCAT(r.hora_inicio, 'h às ', r.hora_inicio + r.duracao_h, 'h') AS horario,
+       r.total
+FROM reservas r
+JOIN usuarios u ON u.id = r.usuario_id
+JOIN quadras  q ON q.id = r.quadra_id
+ORDER BY r.data_jogo, r.hora_inicio;
+
+-- 3.16 Faturamento por anunciante (soma das reservas)
+SELECT a.nome AS anunciante, COUNT(r.id) AS reservas, COALESCE(SUM(r.subtotal), 0) AS faturamento
+FROM anunciantes a
+JOIN quadras q ON q.anunciante_id = a.id
+LEFT JOIN reservas r ON r.quadra_id = q.id
+GROUP BY a.nome
+ORDER BY faturamento DESC;
+
+-- 3.17 Favoritos de cada usuário
+SELECT u.nome AS usuario, q.nome AS quadra_favorita
+FROM favoritos f
+JOIN usuarios u ON u.id = f.usuario_id
+JOIN quadras  q ON q.id = f.quadra_id
+ORDER BY u.nome, q.nome;
+
+-- 3.18 CASE: faixa de preço
+SELECT nome, preco_hora,
+       CASE WHEN preco_hora < 120 THEN 'Econômica'
+            WHEN preco_hora < 200 THEN 'Intermediária'
+            ELSE 'Premium' END AS faixa
+FROM quadras
+ORDER BY preco_hora;
+
+-- 3.19 VIEW: a listagem da busca pronta para reutilizar
+CREATE VIEW vw_busca AS
+SELECT q.id, q.nome, e.nome AS esporte, q.bairro, c.nome AS cidade, c.uf,
+       p.nome AS piso, q.preco_hora, q.nota, q.avaliacoes, q.destaque
+FROM quadras q
+JOIN esportes e ON e.id = q.esporte_id
+JOIN cidades  c ON c.id = q.cidade_id
+JOIN pisos    p ON p.id = q.piso_id;
+
+SELECT * FROM vw_busca WHERE cidade = 'São Paulo' ORDER BY nota DESC;
+
+-- 3.20 INSERT, UPDATE e DELETE de exemplo (nova reserva, reajuste, cancelamento)
+INSERT INTO reservas (id, usuario_id, quadra_id, data_jogo, hora_inicio, duracao_h, subtotal, taxa, total)
+VALUES (9, 5, 27, '2026-12-02', 20, 1, 170.00, 11.90, 181.90);
+
+UPDATE quadras SET preco_hora = preco_hora * 1.05 WHERE cidade_id = 2;   -- +5% em São Paulo
+UPDATE reservas SET status = 'cancelada' WHERE id = 9;
+DELETE FROM reservas WHERE status = 'cancelada';
